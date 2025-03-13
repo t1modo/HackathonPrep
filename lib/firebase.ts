@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { getFirestore } from "firebase/firestore"
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
 // Check if we're in a browser environment
@@ -37,6 +37,19 @@ const initializeFirebase = () => {
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
     const auth = getAuth(app)
     const db = getFirestore(app)
+    
+    // Enable offline persistence for Firestore
+    if (isBrowser) {
+      enableIndexedDbPersistence(db)
+        .catch((err) => {
+          if (err.code === 'failed-precondition') {
+            console.error('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+          } else if (err.code === 'unimplemented') {
+            console.error('The current browser does not support all of the features required to enable persistence');
+          }
+        });
+    }
+    
     const storage = getStorage(app)
 
     return { app, auth, db, storage }
@@ -56,4 +69,3 @@ const initializeFirebase = () => {
 const { app, auth, db, storage } = isBrowser ? initializeFirebase() : { app: null, auth: null, db: null, storage: null }
 
 export { auth, db, storage }
-
